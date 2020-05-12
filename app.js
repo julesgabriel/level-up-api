@@ -8,7 +8,6 @@ const express = require('express')
     , config = require('./configuration/config')
     , mysql = require('mysql')
     , app = express()
-    , User = require('./controller/userController')
     , db = require('./models');
 
 //Define MySQL parameter in Config.js file.
@@ -32,9 +31,11 @@ passport.use(new FacebookStrategy({
         db.User.create({
             user: profile.displayName,
             token: accessToken,
+            profile: profile.id
         }).then(submittedUser => res.send(submittedUser));
+
         process.nextTick(function () {
-            console.log(profile.displayName);
+            console.log(profile);
             return done(null, profile);
         });
     }
