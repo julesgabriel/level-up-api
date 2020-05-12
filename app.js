@@ -1,4 +1,3 @@
-
 const express = require('express')
     , passport = require('passport')
     , FacebookStrategy = require('passport-facebook').Strategy
@@ -22,12 +21,14 @@ passport.deserializeUser(function (obj, done) {
     done(null, obj);
 });
 
+
 passport.use(new FacebookStrategy({
         clientID: config.facebook_api_key,
         clientSecret: config.facebook_api_secret,
         callbackURL: config.callback_url
     },
     function (accessToken, refreshToken, profile, done) {
+   // ici il fait le garder en session (cookie parser)
         db.User.create({
             user: profile.displayName,
             token: accessToken,
@@ -39,6 +40,8 @@ passport.use(new FacebookStrategy({
         });
     }
 ));
+
+console.log("le nom affiché est:" + displayName)
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -77,13 +80,36 @@ function ensureAuthenticated(req, res, next) {
     res.redirect('/login');
 }
 
-app.get('/posts', function (req, res) { 
+app.get('/posts', function (req, res) {
+    let array;
+    let utilisateur;
 
+
+    let token;
+    let profile;
     db.User.findAll({
-        where : {
-            user : "Mathias Gilles"
+        where: {
+            user: "Jules DAYAUX"
         }
-    }).then(user => { const array = res.send(user)});
+    }).then(users => {
+        array = users;
+        db.User.findAll({
+            where: {
+                id: array.length
+            }
+        }).then(user => {
+            utilisateur = user;
+            res.send(user);
+            let base = user[0].dataValues;
+            token = base.token;
+            profile = base.profile;
+
+            /**
+             * Ici on peut fetch nos url pour récupérer les posts maintenant.
+             * */
+
+        });
+    });
 });
 
 app.listen(3000);
