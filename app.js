@@ -33,7 +33,6 @@ passport.use(new FacebookStrategy({
             token: accessToken,
             profile: profile.id
         }).then(submittedUser => res.send(submittedUser));
-
         process.nextTick(function () {
             console.log(profile);
             return done(null, profile);
