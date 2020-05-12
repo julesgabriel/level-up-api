@@ -77,4 +77,13 @@ function ensureAuthenticated(req, res, next) {
     res.redirect('/login');
 }
 
+app.get('/posts', function (req, res) { 
+
+    db.User.findAll({
+        where : {
+            user : "Mathias Gilles"
+        }
+    }).then(user => { const array = res.send(user)});
+});
+
 app.listen(3000);

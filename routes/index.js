@@ -7,21 +7,7 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-router.get('/posts', function(req, res, next){
-  let token;
 
-  /** exports.getOneUser = (res, req) => {
-    db.User.findAll({
-      where: {
-
-      }
-    }).then(user => res.send(user)); **/
-
-
-  };
-
-
-})
 
 
 
