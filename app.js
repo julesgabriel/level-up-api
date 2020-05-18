@@ -60,7 +60,7 @@ app.get('/account', ensureAuthenticated, function (req, res) {
     res.render('account', {user: req.user});
 });
 
-app.get('/auth/facebook', passport.authenticate('facebook', {scope: 'email'}));
+app.get('/auth/facebook', passport.authenticate('facebook', {scope: 'user_posts'}));
 
 app.get('/auth/facebook/callback',
     passport.authenticate('facebook', {successRedirect: '/', failureRedirect: '/login'}),
