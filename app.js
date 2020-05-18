@@ -83,8 +83,6 @@ function ensureAuthenticated(req, res, next) {
 app.get('/posts', function (req, res) {
     let array;
     let utilisateur;
-
-
     let token;
     let profile;
     db.User.findAll({
@@ -103,11 +101,9 @@ app.get('/posts', function (req, res) {
             let base = user[0].dataValues;
             token = base.token;
             profile = base.profile;
-
             /**
              * Ici on peut fetch nos url pour récupérer les posts maintenant.
              * */
-
         });
     });
 });
