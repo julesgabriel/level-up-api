@@ -7,7 +7,8 @@ const express = require('express')
     , config = require('./configuration/config')
     , mysql = require('mysql')
     , app = express()
-    , db = require('./models');
+    , db = require('./models')
+    , fetch = require("node-fetch");
 
 //Define MySQL parameter in Config.js file.
 var cookieSession = require('cookie-session');
@@ -41,7 +42,9 @@ passport.use(new FacebookStrategy({
     }
 ));
 
+/* 
 console.log("le nom affiché est:" + displayName)
+*/ 
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -85,9 +88,10 @@ app.get('/posts', function (req, res) {
     let utilisateur;
     let token;
     let profile;
+    let response;
     db.User.findAll({
         where: {
-            user: "Jules DAYAUX"
+            user: "Mathias Gilles"
         }
     }).then(users => {
         array = users;
@@ -97,13 +101,30 @@ app.get('/posts', function (req, res) {
             }
         }).then(user => {
             utilisateur = user;
-            res.send(user);
+            /*res.send(user); */
             let base = user[0].dataValues;
             token = base.token;
             profile = base.profile;
             /**
              * Ici on peut fetch nos url pour récupérer les posts maintenant.
              * */
+            fetch(
+              'https://graph.facebook.com/' + profile + '/feed?fields=id,message,created_time,full_picture,comments,shares&access_token=' + token
+            ).then(res => res.json())
+            .then(json => {
+                let data = json.data;
+                res.send(data);
+               /** for ( let i = 0; i <= data.length;i++){
+                  db.Post.create({
+                    fbid: data[i].id,
+                    message: data[i].message,
+                    created_time: data[i].created_time,
+                    full_picture: data[i].full_picture,
+                    comments: data[i].comments,
+                    shares: 0,
+                  })
+                } */
+            });
         });
     });
 });
