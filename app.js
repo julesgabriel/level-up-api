@@ -84,27 +84,28 @@ function ensureAuthenticated(req, res, next) {
 }
 
 app.get('/posts', function (req, res) {
-    function postFindOrCreate(data, i) {
-        let messageContent;
-        let commentContent;
-        let sharesContent;
-        let pictureContent;
+    function postFindOrCreate(data, json) {
+        for (let i = 0; i <= json.data.length; i++) {
+            let messageContent;
+            let commentContent;
+            let sharesContent;
+            let pictureContent;
+            messageContent = data[i].message === undefined ? null : data[i].message
+            commentContent = data[i].comment === undefined ? null : data[i].comment
+            sharesContent = data[i].shares === undefined ? null : data[i].shares
+            pictureContent = data[i].full_picture === undefined ? null : data[i].full_picture
 
-        messageContent = data[i].message === undefined ? null : data[i].message
-        commentContent = data[i].comment === undefined ? null : data[i].comment
-        sharesContent = data[i].shares === undefined ? null : data[i].shares
-        pictureContent = data[i].full_picture === undefined ? null : data[i].full_picture
-
-        db.Post.findOrCreate({
-            where: {
-                fbid: data[i].id,
-                message: messageContent,
-                created_time: data[i].created_time,
-                full_picture: pictureContent,
-                comments: commentContent,
-                shares: sharesContent,
-            },
-        })
+            db.Post.findOrCreate({
+                where: {
+                    fbid: data[i].id,
+                    message: messageContent,
+                    created_time: data[i].created_time,
+                    full_picture: pictureContent,
+                    comments: commentContent,
+                    shares: sharesContent,
+                },
+            })
+        }
     }
 
     let array;
@@ -129,27 +130,24 @@ app.get('/posts', function (req, res) {
             let base = user[0].dataValues;
             token = base.token;
             profile = base.profile;
-            /**
-             * Ici on peut fetch nos url pour récupérer les posts maintenant.
-             * */
+
             fetch(
                 'https://graph.facebook.com/' + profile + '/feed?fields=id,message,created_time,full_picture,comments,shares&access_token=' + token
             ).then(res => res.json())
                 .then(json => {
                     let data = json.data;
                     res.send(json);
-
+                    postFindOrCreate(data, json)
                     let page = json.paging;
 
-                    for (let i = 0; i <= json.data.length; i++) {
-                        postFindOrCreate(data, i)
-                        /** if (page) {
-                            console.log("CHANGEMENT DE PAGE")
-                            fetch(page.next)
+                    while (page)
+                        fetch(page.next)
+                            .then(response => res.json())
+                            .then(jsonNext => {
+                                let dataNext = jsonNext.data;
 
+                            })
 
-                        } */
-                    }
                 });
         });
     });
