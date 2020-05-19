@@ -42,10 +42,6 @@ passport.use(new FacebookStrategy({
     }
 ));
 
-/* 
-console.log("le nom affiché est:" + displayName)
-*/
-
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.use(cookieParser());
@@ -84,36 +80,12 @@ function ensureAuthenticated(req, res, next) {
 }
 
 app.get('/posts', function (req, res) {
-    function postFindOrCreate(data, json) {
-        for (let i = 0; i <= json.data.length; i++) {
-            let messageContent;
-            let commentContent;
-            let sharesContent;
-            let pictureContent;
-            messageContent = data[i].message === undefined ? null : data[i].message
-            commentContent = data[i].comment === undefined ? null : data[i].comment
-            sharesContent = data[i].shares === undefined ? null : data[i].shares
-            pictureContent = data[i].full_picture === undefined ? null : data[i].full_picture
-
-            db.Post.findOrCreate({
-                where: {
-                    fbid: data[i].id,
-                    message: messageContent,
-                    created_time: data[i].created_time,
-                    full_picture: pictureContent,
-                    comments: commentContent,
-                    shares: sharesContent,
-                },
-            })
-        }
-    }
-
     let array;
     let utilisateur;
     let token;
     let profile;
     let response;
-
+    let allDataJson = [];
     db.User.findAll({
         where: {
             user: "Jules DAYAUX"
@@ -130,27 +102,60 @@ app.get('/posts', function (req, res) {
             let base = user[0].dataValues;
             token = base.token;
             profile = base.profile;
-
             fetch(
                 'https://graph.facebook.com/' + profile + '/feed?fields=id,message,created_time,full_picture,comments,shares&access_token=' + token
-            ).then(res => res.json())
+            )
+                .then(res => res.json())
                 .then(json => {
-                    let data = json.data;
-                    res.send(json);
-                    postFindOrCreate(data, json)
-                    let page = json.paging;
+                    let data = json.data
+                    //res.send(json.paging.next)
+                    postFindOrCreate(json).then(r => console.log('ntm ' + r))
+                })
 
-                    while (page)
-                        fetch(page.next)
-                            .then(response => res.json())
-                            .then(jsonNext => {
-                                let dataNext = jsonNext.data;
-
-                            })
-
-                });
         });
     });
+
+    async function postFindOrCreate(json) {
+        let x = json.data;
+        for (let i = 0; i <= x.length; i++) {
+            let messageContent;
+            let commentContent;
+            let sharesContent;
+            let pictureContent;
+            messageContent = x[i].message === undefined ? null : x[i].message
+            commentContent = x[i].comment === undefined ? null : x[i].comment
+            sharesContent = x[i].shares === undefined ? null : x[i].shares.count
+            pictureContent = x[i].full_picture === undefined ? null : x[i].full_picture
+            db.Post.findOrCreate({
+                where: {
+                    fbid: x[i].id,
+                    message: messageContent,
+                    created_time: x[i].created_time,
+                    full_picture: pictureContent,
+                    comments: commentContent,
+                    shares: sharesContent,
+                },
+            })
+            allDataJson.push(x)
+            if (i + 1 === json.data.length) {
+                console.log("json paging : " + json.paging)
+                if (json.paging) {
+                    console.log('je rentre')
+                    fetch(json.paging.next)
+                        .then(res => res.json())
+                        .then(jsonNext => {
+                            console.log("HEY NTM " + jsonNext.data.length)
+                            if (!jsonNext.paging) {
+                                res.send(allDataJson);
+                            } else {
+                                console.log('jules')
+                                postFindOrCreate(jsonNext)
+                            }
+                        })
+                }
+            }
+        }
+    }
 });
 
 
