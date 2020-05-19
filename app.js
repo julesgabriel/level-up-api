@@ -29,7 +29,7 @@ passport.use(new FacebookStrategy({
         callbackURL: config.callback_url
     },
     function (accessToken, refreshToken, profile, done) {
-   // ici il fait le garder en session (cookie parser)
+        // ici il fait le garder en session (cookie parser)
         db.User.create({
             user: profile.displayName,
             token: accessToken,
@@ -44,7 +44,7 @@ passport.use(new FacebookStrategy({
 
 /* 
 console.log("le nom affiché est:" + displayName)
-*/ 
+*/
 
 app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
@@ -84,14 +84,38 @@ function ensureAuthenticated(req, res, next) {
 }
 
 app.get('/posts', function (req, res) {
+    function postFindOrCreate(data, i) {
+        let messageContent;
+        let commentContent;
+        let sharesContent;
+        let pictureContent;
+
+        messageContent = data[i].message === undefined ? null : data[i].message
+        commentContent = data[i].comment === undefined ? null : data[i].comment
+        sharesContent = data[i].shares === undefined ? null : data[i].shares
+        pictureContent = data[i].full_picture === undefined ? null : data[i].full_picture
+
+        db.Post.findOrCreate({
+            where: {
+                fbid: data[i].id,
+                message: messageContent,
+                created_time: data[i].created_time,
+                full_picture: pictureContent,
+                comments: commentContent,
+                shares: sharesContent,
+            },
+        })
+    }
+
     let array;
     let utilisateur;
     let token;
     let profile;
     let response;
+
     db.User.findAll({
         where: {
-            user: "Mathias Gilles"
+            user: "Jules DAYAUX"
         }
     }).then(users => {
         array = users;
@@ -109,24 +133,27 @@ app.get('/posts', function (req, res) {
              * Ici on peut fetch nos url pour récupérer les posts maintenant.
              * */
             fetch(
-              'https://graph.facebook.com/' + profile + '/feed?fields=id,message,created_time,full_picture,comments,shares&access_token=' + token
+                'https://graph.facebook.com/' + profile + '/feed?fields=id,message,created_time,full_picture,comments,shares&access_token=' + token
             ).then(res => res.json())
-            .then(json => {
-                let data = json.data;
-                res.send(data);
-               /** for ( let i = 0; i <= data.length;i++){
-                  db.Post.create({
-                    fbid: data[i].id,
-                    message: data[i].message,
-                    created_time: data[i].created_time,
-                    full_picture: data[i].full_picture,
-                    comments: data[i].comments,
-                    shares: 0,
-                  })
-                } */
-            });
+                .then(json => {
+                    let data = json.data;
+                    res.send(json);
+
+                    let page = json.paging;
+
+                    for (let i = 0; i <= json.data.length; i++) {
+                        postFindOrCreate(data, i)
+                        /** if (page) {
+                            console.log("CHANGEMENT DE PAGE")
+                            fetch(page.next)
+
+
+                        } */
+                    }
+                });
         });
     });
 });
+
 
 app.listen(3000);
